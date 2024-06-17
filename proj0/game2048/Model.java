@@ -113,12 +113,50 @@ public class Model extends Observable {
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
-
+        board.setViewingPerspective(side);
+        boolean merged[]; // 判断当前tile是否已经合并过
+        int size = board.size();
+        for (int col = 0; col < size; col++) {
+            merged = new boolean[]{false, false, false, false};
+            // 从该列的最顶层开始处理
+            for (int row = size - 1; row >= 0; row--) {
+                Tile cur = board.tile(col, row);
+                Tile next = colFirstElement(col, row);
+                if (cur != null && next != null) {
+                    if (!merged[row] && cur.value() == next.value()) {
+                        board.move(col, row, next);
+                        score += cur.value() * 2;
+                        // 重新从该行开始处理数据
+                        merged[row] = true;
+                        row++;
+                        changed = true;
+                    } else if (cur.value() != next.value() && row > 0) {
+                        board.move(col, row - 1, next);
+                        changed = true;
+                    }
+                } else if (cur == null && next != null) {
+                    board.move(col, row, next);
+                    row++;
+                    changed = true;
+                }
+            }
+        }
+        board.setViewingPerspective(Side.NORTH);
         checkGameOver();
         if (changed) {
             setChanged();
         }
         return changed;
+    }
+
+    public Tile colFirstElement(int col, int row) {
+        for (int i = row - 1; i >= 0; i--) {
+            Tile tile = board.tile(col, i);
+            if (tile != null) {
+                return tile;
+            }
+        }
+        return null;
     }
 
     /** Checks if the game is over and sets the gameOver variable
@@ -137,7 +175,15 @@ public class Model extends Observable {
      *  Empty spaces are stored as null.
      * */
     public static boolean emptySpaceExists(Board b) {
-        // TODO: Fill in this function.
+        int size = b.size();
+        for(int row = 0; row < size; row++) {
+            for(int col = 0; col < size; col++) {
+                Tile tile = b.tile(col, row);
+                if (tile == null) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -147,7 +193,15 @@ public class Model extends Observable {
      * given a Tile object t, we get its value with t.value().
      */
     public static boolean maxTileExists(Board b) {
-        // TODO: Fill in this function.
+        int size = b.size();
+        for (int row = 0; row < size; row++) {
+            for(int col = 0; col < size; col++) {
+                Tile tile = b.tile(col, row);
+                if (tile != null && tile.value() == MAX_PIECE) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -158,7 +212,28 @@ public class Model extends Observable {
      * 2. There are two adjacent tiles with the same value.
      */
     public static boolean atLeastOneMoveExists(Board b) {
-        // TODO: Fill in this function.
+        if (emptySpaceExists(b)) {
+            return true;
+        }
+        int size = b.size();
+        for(int row = 0; row < size; row++) {
+            for(int col = 0; col < size - 1; col++) {
+                Tile tile = b.tile(col, row);
+                Tile nextTile = b.tile(col + 1, row);
+                if (tile != null && nextTile != null && tile.value() == nextTile.value()) {
+                    return true;
+                }
+            }
+        }
+        for(int col = 0; col < size; col++) {
+            for(int row = 0; row < size - 1; row++) {
+                Tile tile = b.tile(col, row);
+                Tile nextTile = b.tile(col, row + 1);
+                if (tile != null && nextTile != null && tile.value() == nextTile.value()) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
